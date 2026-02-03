@@ -1,6 +1,7 @@
 """配置管理器 - 管理应用配置的读写"""
 
 import toml
+import os
 from pathlib import Path
 from typing import Dict, Any, Optional, Literal
 
@@ -24,6 +25,8 @@ DEFAULT_GROK = {
     "stream_chunk_timeout": 120,
     "stream_total_timeout": 600,
     "retry_status_codes": [401, 429],  # 可重试的HTTP状态码
+    "turnstile_solver_url": "",        # Turnstile Solver 接口地址
+    "yescaptcha_key": "",              # YesCaptcha API Key
 }
 
 DEFAULT_GLOBAL = {
@@ -102,6 +105,10 @@ class ConfigManager:
                     config["cache_proxy_url"] = self._normalize_proxy(config["cache_proxy_url"])
                 if "cf_clearance" in config:
                     config["cf_clearance"] = self._normalize_cf(config["cf_clearance"])
+                
+                # 环境变量覆盖
+                config["turnstile_solver_url"] = os.getenv("TURNSTILE_SOLVER_URL", config.get("turnstile_solver_url", ""))
+                config["yescaptcha_key"] = os.getenv("YESCAPTCHA_KEY", config.get("yescaptcha_key", ""))
 
             return config
         except Exception as e:

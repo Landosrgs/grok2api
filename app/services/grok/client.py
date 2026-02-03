@@ -13,6 +13,7 @@ from app.services.grok.statsig import get_dynamic_headers
 from app.services.grok.token import token_manager
 from app.services.grok.upload import ImageUploadManager
 from app.services.grok.create import PostCreateManager
+from app.services.grok.turnstile import turnstile_manager
 from app.core.exception import GrokApiException
 
 
@@ -238,6 +239,11 @@ class GrokClient:
                 
                 # 构建请求头（放在循环内以支持重试新Token）
                 headers = GrokClient._build_headers(token)
+                
+                # 如果有之前保存的 Turnstile Token，添加到请求头（根据实际 API 需求，这里可能需要调整）
+                # 注意：有些接口可能通过 headers 传递，有些可能在 payload 中。
+                # 后面 _handle_error 如果拿到 token 会重试
+                
                 if model == "grok-imagine-0.9":
                     file_attachments = payload.get("fileAttachments", [])
                     ref_id = post_id or (file_attachments[0] if file_attachments else "")
@@ -256,14 +262,42 @@ class GrokClient:
                         proxies=proxies
                     )
                     
-                    # 内层403重试：仅当有代理池时触发
-                    if response.status_code == 403 and proxy_pool._enabled:
-                        retry_403_count += 1
-                        if retry_403_count <= max_403_retries:
-                            logger.warning(f"[Client] 遇到403错误，正在重试 ({retry_403_count}/{max_403_retries})...")
-                            await session.close()
-                            await asyncio.sleep(0.5)
-                            continue
+                    # 内层403重试：仅当有代理池或 Turnstile Solver 时触发
+                    if response.status_code == 403:
+                        # 检查是否是 Turnstile 挑战
+                        is_turnstile = False
+                        try:
+                            resp_text = await response.text()
+                            if "challenges.cloudflare.com" in resp_text or "Just a moment" in resp_text:
+                                is_turnstile = True
+                        except:
+                            pass
+
+                        if is_turnstile:
+                            logger.warning(f"[Client] 遇到 Cloudflare Turnstile 挑战，尝试求解...")
+                            ts_token = await turnstile_manager.solve(API_ENDPOINT)
+                            if ts_token:
+                                logger.info(f"[Client] Turnstile 求解成功，准备带 Token 重试")
+                                # 将 token 注入下一次请求的 Headers 或 Payload
+                                # 某些 Grok 接口在 payload 中传 turnstileToken，某些在 header 
+                                # 这里我们选择同时注入，或者根据上下文调整
+                                headers["x-turnstile-response"] = ts_token
+                                # 如果 payload 是 list (like in grok.py), or dict
+                                if isinstance(payload, dict):
+                                    payload["turnstileToken"] = ts_token
+                                
+                                retry_403_count += 1
+                                await session.close()
+                                await asyncio.sleep(0.5)
+                                continue
+
+                        if proxy_pool._enabled:
+                            retry_403_count += 1
+                            if retry_403_count <= max_403_retries:
+                                logger.warning(f"[Client] 遇到403错误，正在重试 ({retry_403_count}/{max_403_retries})...")
+                                await session.close()
+                                await asyncio.sleep(0.5)
+                                continue
                         logger.error(f"[Client] 403错误，已重试{retry_403_count-1}次，放弃")
                     
                     # 检查可配置状态码错误 - 外层重试
