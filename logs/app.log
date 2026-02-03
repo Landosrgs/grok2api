@@ -1,0 +1,16 @@
+2026-02-04 04:51:23,927 - root - INFO - [Grok2API] Windows系统，使用默认asyncio事件循环
+2026-02-04 04:51:23,928 - root - INFO - [Grok2API] 应用正在启动...
+2026-02-04 04:51:23,928 - root - INFO - [Grok2API] Fork 版本维护: @Tomiya233
+2026-02-04 04:51:24,578 - root - INFO - [Grok2API] Windows系统，使用默认asyncio事件循环
+2026-02-04 04:51:24,585 - root - INFO - [Grok2API] 应用正在启动...
+2026-02-04 04:51:24,590 - root - INFO - [Grok2API] Fork 版本维护: @Tomiya233
+2026-02-04 04:51:24,801 - root - INFO - [Storage] 使用file模式
+2026-02-04 04:51:24,805 - root - INFO - [Grok2API] 核心服务初始化完成
+2026-02-04 04:51:25,775 - root - INFO - [ProxyPool] 未配置代理
+2026-02-04 04:51:25,785 - root - INFO - [Grok2API] Token数据加载完成
+2026-02-04 04:51:25,786 - root - INFO - [Grok2API] API Key数据加载完成
+2026-02-04 04:51:25,789 - root - INFO - [Grok2API] 统计和日志数据加载完成
+2026-02-04 04:51:25,790 - root - INFO - [Token] 存储任务已创建
+2026-02-04 04:51:25,790 - root - INFO - [Token] 存储任务已启动，间隔: 1.0s
+2026-02-04 04:51:25,791 - root - INFO - [MCP] MCP服务初始化完成
+2026-02-04 04:51:25,791 - root - INFO - [Grok2API] 应用启动成功
